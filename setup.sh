@@ -9,15 +9,30 @@ RED="\033[31m"
 RESET="\033[0m"
 
 MODEL="${XHIGH_MODEL:-eburonmax/eburon-xhigh-hidden:latest}"
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_PATH="${BASH_SOURCE[0]:-}"
+ROOT_DIR=""
 CONFIG_DIR="$HOME/.config/opencode"
 INSTALL_DIR=""
 PLATFORM="$(uname -s)"
+BOOTSTRAP_DIR=""
+ASSET_BASE_URL="${XHIGH_ASSET_BASE_URL:-https://raw.githubusercontent.com/eburondeveloperph-gif/xhigh/main}"
+
+if [ -n "$SCRIPT_PATH" ] && [ -e "$SCRIPT_PATH" ]; then
+  ROOT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
+fi
 
 step() { echo -e "${CYAN}${BOLD}==>${RESET} $1"; }
 ok() { echo -e "${GREEN}${BOLD}✔${RESET} $1"; }
 warn() { echo -e "${YELLOW}${BOLD}!${RESET} $1"; }
 fail() { echo -e "${RED}${BOLD}x${RESET} $1"; exit 1; }
+
+cleanup() {
+  if [ -n "$BOOTSTRAP_DIR" ] && [ -d "$BOOTSTRAP_DIR" ]; then
+    rm -rf "$BOOTSTRAP_DIR"
+  fi
+}
+
+trap cleanup EXIT
 
 pick_install_dir() {
   local candidate test_file
@@ -32,6 +47,34 @@ pick_install_dir() {
     fi
   done
   return 1
+}
+
+download_asset() {
+  local path destination
+  path="$1"
+  destination="$2"
+  mkdir -p "$(dirname "$destination")"
+  curl -fsSL "$ASSET_BASE_URL/$path" -o "$destination"
+}
+
+ensure_repo_files() {
+  if [ -n "$ROOT_DIR" ] && [ -f "$ROOT_DIR/config/opencode.json" ] && [ -f "$ROOT_DIR/bin/codemax" ]; then
+    return 0
+  fi
+
+  command -v curl >/dev/null 2>&1 || fail "curl is required to bootstrap XHigh files"
+  BOOTSTRAP_DIR="$(mktemp -d)"
+  step "Downloading XHigh assets"
+
+  download_asset "bin/codemax" "$BOOTSTRAP_DIR/bin/codemax"
+  download_asset "bin/xhigh" "$BOOTSTRAP_DIR/bin/xhigh"
+  download_asset "bin/eburon-xhigh" "$BOOTSTRAP_DIR/bin/eburon-xhigh"
+  download_asset "config/opencode.json" "$BOOTSTRAP_DIR/config/opencode.json"
+  download_asset "config/tui.json" "$BOOTSTRAP_DIR/config/tui.json"
+
+  chmod +x "$BOOTSTRAP_DIR/bin/codemax" "$BOOTSTRAP_DIR/bin/xhigh" "$BOOTSTRAP_DIR/bin/eburon-xhigh"
+  ROOT_DIR="$BOOTSTRAP_DIR"
+  ok "XHigh assets downloaded"
 }
 
 install_opencode() {
@@ -169,13 +212,23 @@ start_tui() {
   echo ""
   ok "Setup complete"
   echo "Starting XHigh TUI..."
-  exec "$launcher"
+  if [ -t 0 ] && [ -t 1 ]; then
+    exec "$launcher"
+  fi
+
+  if [ -r /dev/tty ] && [ -w /dev/tty ]; then
+    exec "$launcher" </dev/tty >/dev/tty 2>&1
+  fi
+
+  warn "No interactive TTY available to launch the TUI automatically."
+  echo "Run: $launcher"
 }
 
 echo ""
 echo "XHigh setup"
 echo ""
 
+ensure_repo_files
 install_opencode
 install_ollama
 ensure_ollama_running
