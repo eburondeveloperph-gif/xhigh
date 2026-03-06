@@ -19,6 +19,7 @@ REPO_ARCHIVE_URL="${XHIGH_REPO_ARCHIVE_URL:-https://github.com/eburondeveloperph
 OPENCODE_BINARY=""
 BUN_BIN_DIR="${BUN_INSTALL:-$HOME/.bun}/bin"
 PATH="$BUN_BIN_DIR:$PATH"
+REQUIRED_BUN_VERSION=""
 
 if [ -n "$SCRIPT_PATH" ] && [ -e "$SCRIPT_PATH" ]; then
   ROOT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
@@ -36,6 +37,26 @@ cleanup() {
 }
 
 trap cleanup EXIT
+
+version_gte() {
+  local current required i
+  local current_parts required_parts
+  current="$1"
+  required="$2"
+  IFS=. read -r -a current_parts <<< "$current"
+  IFS=. read -r -a required_parts <<< "$required"
+  for i in 0 1 2; do
+    local c="${current_parts[$i]:-0}"
+    local r="${required_parts[$i]:-0}"
+    if ((10#$c > 10#$r)); then
+      return 0
+    fi
+    if ((10#$c < 10#$r)); then
+      return 1
+    fi
+  done
+  return 0
+}
 
 pick_install_dir() {
   local candidate test_file
@@ -68,18 +89,31 @@ ensure_repo_files() {
 }
 
 ensure_bun() {
+  if [ -z "$REQUIRED_BUN_VERSION" ] && [ -f "$ROOT_DIR/vendor/opencode/package.json" ]; then
+    REQUIRED_BUN_VERSION="$(sed -n 's/.*"packageManager":[[:space:]]*"bun@\([^"]*\)".*/\1/p' "$ROOT_DIR/vendor/opencode/package.json" | head -n 1)"
+  fi
+  REQUIRED_BUN_VERSION="${REQUIRED_BUN_VERSION:-1.3.10}"
+
   if command -v bun >/dev/null 2>&1; then
-    ok "Bun present: $(bun --version 2>/dev/null)"
-    return 0
+    local current_bun_version
+    current_bun_version="$(bun --version 2>/dev/null | head -n 1)"
+    if version_gte "$current_bun_version" "$REQUIRED_BUN_VERSION"; then
+      ok "Bun present: $current_bun_version"
+      return 0
+    fi
+    warn "Bun $current_bun_version is too old. Upgrading to >= $REQUIRED_BUN_VERSION."
   fi
 
   command -v curl >/dev/null 2>&1 || fail "curl is required to install Bun"
-  step "Installing Bun"
+  step "Installing Bun >= $REQUIRED_BUN_VERSION"
   curl -fsSL https://bun.sh/install | bash
   export PATH="$BUN_BIN_DIR:$PATH"
 
   command -v bun >/dev/null 2>&1 || fail "Bun install completed but no bun binary was found"
-  ok "Bun installed: $(bun --version 2>/dev/null)"
+  if ! version_gte "$(bun --version 2>/dev/null | head -n 1)" "$REQUIRED_BUN_VERSION"; then
+    fail "Bun upgrade completed but the installed version is still below $REQUIRED_BUN_VERSION"
+  fi
+  ok "Bun installed: $(bun --version 2>/dev/null | head -n 1)"
 }
 
 build_vendored_opencode() {
@@ -103,7 +137,7 @@ build_vendored_opencode() {
   step "Building vendored OpenCode TUI"
   (
     cd "$build_root"
-    bun install
+    HUSKY=0 bun install
     MODELS_DEV_API_JSON="$models_json" bun run --cwd packages/opencode build -- --single --skip-install
   )
 
