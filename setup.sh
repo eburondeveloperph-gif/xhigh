@@ -58,6 +58,10 @@ version_gte() {
   return 0
 }
 
+current_bun_version() {
+  bun --version 2>/dev/null | head -n 1
+}
+
 pick_install_dir() {
   local candidate test_file
   for candidate in "$HOME/.local/bin" "$HOME/bin" "/usr/local/bin" "/opt/homebrew/bin"; do
@@ -89,31 +93,51 @@ ensure_repo_files() {
 }
 
 ensure_bun() {
+  local current_version upgraded=0
+
   if [ -z "$REQUIRED_BUN_VERSION" ] && [ -f "$ROOT_DIR/vendor/opencode/package.json" ]; then
     REQUIRED_BUN_VERSION="$(sed -n 's/.*"packageManager":[[:space:]]*"bun@\([^"]*\)".*/\1/p' "$ROOT_DIR/vendor/opencode/package.json" | head -n 1)"
   fi
   REQUIRED_BUN_VERSION="${REQUIRED_BUN_VERSION:-1.3.10}"
 
   if command -v bun >/dev/null 2>&1; then
-    local current_bun_version
-    current_bun_version="$(bun --version 2>/dev/null | head -n 1)"
-    if version_gte "$current_bun_version" "$REQUIRED_BUN_VERSION"; then
-      ok "Bun present: $current_bun_version"
+    current_version="$(current_bun_version)"
+    if version_gte "$current_version" "$REQUIRED_BUN_VERSION"; then
+      ok "Bun present: $current_version"
       return 0
     fi
-    warn "Bun $current_bun_version is too old. Upgrading to >= $REQUIRED_BUN_VERSION."
+    warn "Bun $current_version is too old. Upgrading to >= $REQUIRED_BUN_VERSION."
+
+    if bun upgrade >/dev/null 2>&1; then
+      hash -r
+      current_version="$(current_bun_version)"
+      if version_gte "$current_version" "$REQUIRED_BUN_VERSION"; then
+        ok "Bun upgraded in place: $current_version"
+        return 0
+      fi
+      warn "bun upgrade completed but still resolved to $current_version"
+      upgraded=1
+    else
+      warn "bun upgrade failed. Falling back to the Bun installer."
+    fi
   fi
 
   command -v curl >/dev/null 2>&1 || fail "curl is required to install Bun"
-  step "Installing Bun >= $REQUIRED_BUN_VERSION"
+  if [ "$upgraded" -eq 1 ]; then
+    step "Reinstalling Bun >= $REQUIRED_BUN_VERSION"
+  else
+    step "Installing Bun >= $REQUIRED_BUN_VERSION"
+  fi
   curl -fsSL https://bun.sh/install | bash
   export PATH="$BUN_BIN_DIR:$PATH"
+  hash -r
 
   command -v bun >/dev/null 2>&1 || fail "Bun install completed but no bun binary was found"
-  if ! version_gte "$(bun --version 2>/dev/null | head -n 1)" "$REQUIRED_BUN_VERSION"; then
-    fail "Bun upgrade completed but the installed version is still below $REQUIRED_BUN_VERSION"
+  current_version="$(current_bun_version)"
+  if ! version_gte "$current_version" "$REQUIRED_BUN_VERSION"; then
+    fail "Bun upgrade completed but the installed version is still below $REQUIRED_BUN_VERSION (current: $current_version)"
   fi
-  ok "Bun installed: $(bun --version 2>/dev/null | head -n 1)"
+  ok "Bun installed: $current_version"
 }
 
 build_vendored_opencode() {
@@ -134,10 +158,10 @@ build_vendored_opencode() {
     fi
   fi
 
-  step "Building vendored OpenCode TUI"
+  step "Building vendored OpenCode TUI with Bun $(current_bun_version)"
   (
     cd "$build_root"
-    HUSKY=0 bun install
+    CI=1 HUSKY=0 HUSKY_SKIP_INSTALL=1 bun install
     MODELS_DEV_API_JSON="$models_json" bun run --cwd packages/opencode build -- --single --skip-install
   )
 
