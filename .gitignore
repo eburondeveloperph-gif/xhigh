@@ -1,1 +1,3 @@
 .DS_Store
+vendor/opencode/node_modules/
+vendor/opencode/packages/opencode/dist/

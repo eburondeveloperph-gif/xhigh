@@ -17,10 +17,12 @@
     "docker",
     "Dockerfile",
     "README.md",
-    "setup.sh"
+    "setup.sh",
+    "vendor"
   ],
   "scripts": {
     "setup": "bash setup.sh",
+    "build:opencode": "bash -lc 'cd vendor/opencode && MODELS_DEV_API_JSON=$(pwd)/models.dev.api.json bun install && MODELS_DEV_API_JSON=$(pwd)/models.dev.api.json bun run --cwd packages/opencode build -- --single --skip-install'",
     "docker:build": "docker build -t xhigh .",
     "docker:run": "docker run --rm -it -v xhigh-ollama:/root/.ollama -v xhigh-config:/root/.config/opencode xhigh"
   },

@@ -15,7 +15,10 @@ CONFIG_DIR="$HOME/.config/opencode"
 INSTALL_DIR=""
 PLATFORM="$(uname -s)"
 BOOTSTRAP_DIR=""
-ASSET_BASE_URL="${XHIGH_ASSET_BASE_URL:-https://raw.githubusercontent.com/eburondeveloperph-gif/xhigh/main}"
+REPO_ARCHIVE_URL="${XHIGH_REPO_ARCHIVE_URL:-https://github.com/eburondeveloperph-gif/xhigh/archive/refs/heads/main.tar.gz}"
+OPENCODE_BINARY=""
+BUN_BIN_DIR="${BUN_INSTALL:-$HOME/.bun}/bin"
+PATH="$BUN_BIN_DIR:$PATH"
 
 if [ -n "$SCRIPT_PATH" ] && [ -e "$SCRIPT_PATH" ]; then
   ROOT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
@@ -49,50 +52,64 @@ pick_install_dir() {
   return 1
 }
 
-download_asset() {
-  local path destination
-  path="$1"
-  destination="$2"
-  mkdir -p "$(dirname "$destination")"
-  curl -fsSL "$ASSET_BASE_URL/$path" -o "$destination"
-}
-
 ensure_repo_files() {
-  if [ -n "$ROOT_DIR" ] && [ -f "$ROOT_DIR/config/opencode.json" ] && [ -f "$ROOT_DIR/bin/codemax" ]; then
+  if [ -n "$ROOT_DIR" ] && [ -f "$ROOT_DIR/config/opencode.json" ] && [ -f "$ROOT_DIR/bin/codemax" ] && [ -d "$ROOT_DIR/vendor/opencode/packages/opencode" ]; then
     return 0
   fi
 
   command -v curl >/dev/null 2>&1 || fail "curl is required to bootstrap XHigh files"
+  command -v tar >/dev/null 2>&1 || fail "tar is required to bootstrap XHigh files"
   BOOTSTRAP_DIR="$(mktemp -d)"
-  step "Downloading XHigh assets"
+  step "Downloading XHigh repository"
+  curl -fsSL "$REPO_ARCHIVE_URL" | tar -xzf - -C "$BOOTSTRAP_DIR" --strip-components=1
 
-  download_asset "bin/codemax" "$BOOTSTRAP_DIR/bin/codemax"
-  download_asset "bin/xhigh" "$BOOTSTRAP_DIR/bin/xhigh"
-  download_asset "bin/eburon-xhigh" "$BOOTSTRAP_DIR/bin/eburon-xhigh"
-  download_asset "config/opencode.json" "$BOOTSTRAP_DIR/config/opencode.json"
-  download_asset "config/tui.json" "$BOOTSTRAP_DIR/config/tui.json"
-
-  chmod +x "$BOOTSTRAP_DIR/bin/codemax" "$BOOTSTRAP_DIR/bin/xhigh" "$BOOTSTRAP_DIR/bin/eburon-xhigh"
   ROOT_DIR="$BOOTSTRAP_DIR"
-  ok "XHigh assets downloaded"
+  ok "XHigh repository downloaded"
 }
 
-install_opencode() {
-  if command -v opencode >/dev/null 2>&1 || [ -x "$HOME/.opencode/bin/opencode" ]; then
-    ok "OpenCode already installed"
+ensure_bun() {
+  if command -v bun >/dev/null 2>&1; then
+    ok "Bun present: $(bun --version 2>/dev/null)"
     return 0
   fi
 
-  command -v curl >/dev/null 2>&1 || fail "curl is required to install OpenCode"
-  step "Installing OpenCode"
-  curl -fsSL https://opencode.ai/install | bash
+  command -v curl >/dev/null 2>&1 || fail "curl is required to install Bun"
+  step "Installing Bun"
+  curl -fsSL https://bun.sh/install | bash
+  export PATH="$BUN_BIN_DIR:$PATH"
 
-  if command -v opencode >/dev/null 2>&1 || [ -x "$HOME/.opencode/bin/opencode" ]; then
-    ok "OpenCode installed"
-    return 0
+  command -v bun >/dev/null 2>&1 || fail "Bun install completed but no bun binary was found"
+  ok "Bun installed: $(bun --version 2>/dev/null)"
+}
+
+build_vendored_opencode() {
+  local build_root models_json
+  build_root="$ROOT_DIR/vendor/opencode"
+  [ -d "$build_root/packages/opencode" ] || fail "Vendored OpenCode source not found in $build_root"
+
+  models_json="$build_root/models.dev.api.json"
+  if [ ! -f "$models_json" ]; then
+    printf '{}\n' > "$models_json"
   fi
 
-  fail "OpenCode install completed but no opencode binary was found"
+  if [ -z "${XHIGH_FORCE_REBUILD:-}" ]; then
+    OPENCODE_BINARY="$(find "$build_root/packages/opencode/dist" -path '*/bin/opencode' -type f 2>/dev/null | head -n 1 || true)"
+    if [ -n "$OPENCODE_BINARY" ] && [ -x "$OPENCODE_BINARY" ]; then
+      ok "Vendored OpenCode already built"
+      return 0
+    fi
+  fi
+
+  step "Building vendored OpenCode TUI"
+  (
+    cd "$build_root"
+    bun install
+    MODELS_DEV_API_JSON="$models_json" bun run --cwd packages/opencode build -- --single --skip-install
+  )
+
+  OPENCODE_BINARY="$(find "$build_root/packages/opencode/dist" -path '*/bin/opencode' -type f 2>/dev/null | head -n 1 || true)"
+  [ -n "$OPENCODE_BINARY" ] && [ -x "$OPENCODE_BINARY" ] || fail "OpenCode build completed but no binary was produced"
+  ok "Vendored OpenCode built: $OPENCODE_BINARY"
 }
 
 install_ollama() {
@@ -185,12 +202,15 @@ install_launchers() {
   INSTALL_DIR="$(pick_install_dir)" || fail "Could not find a writable bin directory"
 
   step "Installing launcher commands into $INSTALL_DIR"
+  [ -n "$OPENCODE_BINARY" ] && [ -x "$OPENCODE_BINARY" ] || fail "OpenCode binary is not available to install"
+  cp "$OPENCODE_BINARY" "$INSTALL_DIR/opencode"
+  chmod +x "$INSTALL_DIR/opencode"
   for wrapper_name in codemax xhigh eburon-xhigh; do
     cp "$ROOT_DIR/bin/$wrapper_name" "$INSTALL_DIR/$wrapper_name"
     chmod +x "$INSTALL_DIR/$wrapper_name"
   done
 
-  ok "Installed commands: codemax, xhigh, eburon-xhigh"
+  ok "Installed commands: opencode, codemax, xhigh, eburon-xhigh"
 
   case ":$PATH:" in
     *":$INSTALL_DIR:"*) ;;
@@ -229,7 +249,8 @@ echo "XHigh setup"
 echo ""
 
 ensure_repo_files
-install_opencode
+ensure_bun
+build_vendored_opencode
 install_ollama
 ensure_ollama_running
 ensure_model

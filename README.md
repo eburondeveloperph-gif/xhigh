@@ -6,6 +6,11 @@ Model page:
 
 - https://ollama.com/eburonmax/eburon-xhigh-hidden
 
+OpenCode TUI source:
+
+- vendored in `vendor/opencode`
+- built locally during setup with Bun
+
 ## Quick start
 
 ```bash
@@ -44,8 +49,8 @@ xhigh
 - `xhigh-setup`
 - locked OpenCode config using `eburonmax/eburon-xhigh-hidden:latest`
 - automatic model pull from `https://ollama.com/eburonmax/eburon-xhigh-hidden`
+- vendored OpenCode source and local TUI build
 - automatic Ollama install
-- automatic OpenCode install
 - automatic TUI launch at the end of setup
 
 ## npm
@@ -59,6 +64,7 @@ xhigh-setup
 
 This installs the package bins:
 
+- `opencode`
 - `codemax`
 - `xhigh`
 - `eburon-xhigh`
@@ -80,6 +86,19 @@ docker run --rm -it -v xhigh-ollama:/root/.ollama -v xhigh-config:/root/.config/
 
 The container starts Ollama, pulls `eburonmax/eburon-xhigh-hidden:latest` if needed, and then opens the TUI.
 
+## Independent OpenCode build
+
+The current OpenCode TUI source used by XHigh is committed in `vendor/opencode`.
+
+Manual local build:
+
+```bash
+cd vendor/opencode
+MODELS_DEV_API_JSON="$(pwd)/models.dev.api.json" bun install
+MODELS_DEV_API_JSON="$(pwd)/models.dev.api.json" bun run --cwd packages/opencode build -- --single --skip-install
+find packages/opencode/dist -path '*/bin/opencode' -type f
+```
+
 ## Files
 
 - `bin/codemax`
@@ -92,3 +111,4 @@ The container starts Ollama, pulls `eburonmax/eburon-xhigh-hidden:latest` if nee
 - `Dockerfile`
 - `package.json`
 - `setup.sh`
+- `vendor/opencode`
