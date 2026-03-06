@@ -141,7 +141,7 @@ ensure_bun() {
 }
 
 build_vendored_opencode() {
-  local build_root models_json
+  local build_root models_json opencode_version opencode_channel
   build_root="$ROOT_DIR/vendor/opencode"
   [ -d "$build_root/packages/opencode" ] || fail "Vendored OpenCode source not found in $build_root"
 
@@ -149,6 +149,9 @@ build_vendored_opencode() {
   if [ ! -f "$models_json" ]; then
     printf '{}\n' > "$models_json"
   fi
+  opencode_version="$(sed -n 's/.*"version":[[:space:]]*"\([^"]*\)".*/\1/p' "$build_root/packages/opencode/package.json" | head -n 1)"
+  opencode_version="${opencode_version:-0.0.0-xhigh}"
+  opencode_channel="${XHIGH_OPENCODE_CHANNEL:-latest}"
 
   if [ -z "${XHIGH_FORCE_REBUILD:-}" ]; then
     OPENCODE_BINARY="$(find "$build_root/packages/opencode/dist" -path '*/bin/opencode' -type f 2>/dev/null | head -n 1 || true)"
@@ -158,11 +161,14 @@ build_vendored_opencode() {
     fi
   fi
 
-  step "Building vendored OpenCode TUI with Bun $(current_bun_version)"
+  step "Building vendored OpenCode TUI with Bun $(current_bun_version) (channel: $opencode_channel, version: $opencode_version)"
   (
     cd "$build_root"
     CI=1 HUSKY=0 HUSKY_SKIP_INSTALL=1 bun install
-    MODELS_DEV_API_JSON="$models_json" bun run --cwd packages/opencode build -- --single --skip-install
+    OPENCODE_CHANNEL="$opencode_channel" \
+      OPENCODE_VERSION="$opencode_version" \
+      MODELS_DEV_API_JSON="$models_json" \
+      bun run --cwd packages/opencode build -- --single --skip-install
   )
 
   OPENCODE_BINARY="$(find "$build_root/packages/opencode/dist" -path '*/bin/opencode' -type f 2>/dev/null | head -n 1 || true)"
