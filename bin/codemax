@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [ -x "$SCRIPT_DIR/opencode" ]; then
+  OPENCODE_BIN="$SCRIPT_DIR/opencode"
+elif command -v opencode >/dev/null 2>&1; then
+  OPENCODE_BIN="$(command -v opencode)"
+elif [ -x "$HOME/.opencode/bin/opencode" ]; then
+  OPENCODE_BIN="$HOME/.opencode/bin/opencode"
+else
+  echo "opencode binary not found. Run 'bash setup.sh' first." >&2
+  exit 1
+fi
+
+export OPENCODE_CLIENT="codemax"
+exec "$OPENCODE_BIN" "$@"

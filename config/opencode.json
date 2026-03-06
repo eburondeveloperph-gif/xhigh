@@ -1,0 +1,54 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "agent": {
+    "build": {
+      "disable": true
+    },
+    "explore": {
+      "disable": true
+    },
+    "general": {
+      "disable": true
+    },
+    "plan": {
+      "disable": true
+    },
+    "xhigh-skill": {
+      "color": "primary",
+      "description": "XHigh hidden default coding agent",
+      "mode": "primary",
+      "model": "ollama/eburonmax/eburon-xhigh-hidden:latest"
+    }
+  },
+  "default_agent": "xhigh-skill",
+  "enabled_providers": [
+    "ollama"
+  ],
+  "model": "ollama/eburonmax/eburon-xhigh-hidden:latest",
+  "permission": {
+    "websearch": "allow"
+  },
+  "provider": {
+    "ollama": {
+      "models": {
+        "eburonmax/eburon-xhigh-hidden": {
+          "_launch": true,
+          "name": "eburonmax/eburon-xhigh-hidden"
+        },
+        "eburonmax/eburon-xhigh-hidden:latest": {
+          "_launch": true,
+          "name": "eburonmax/eburon-xhigh-hidden:latest"
+        }
+      },
+      "name": "xhigh",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://127.0.0.1:11434/v1"
+      },
+      "whitelist": [
+        "eburonmax/eburon-xhigh-hidden:latest"
+      ]
+    }
+  },
+  "small_model": "ollama/eburonmax/eburon-xhigh-hidden:latest"
+}
