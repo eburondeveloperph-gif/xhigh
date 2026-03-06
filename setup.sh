@@ -11,6 +11,8 @@ RESET="\033[0m"
 MODEL="${XHIGH_MODEL:-eburonmax/eburon-xhigh-hidden:latest}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_DIR="$HOME/.config/opencode"
+INSTALL_DIR=""
+PLATFORM="$(uname -s)"
 
 step() { echo -e "${CYAN}${BOLD}==>${RESET} $1"; }
 ok() { echo -e "${GREEN}${BOLD}✔${RESET} $1"; }
@@ -50,13 +52,33 @@ install_opencode() {
   fail "OpenCode install completed but no opencode binary was found"
 }
 
-ensure_ollama() {
+install_ollama() {
   if command -v ollama >/dev/null 2>&1; then
     ok "Ollama present: $(ollama --version 2>/dev/null | head -1)"
     return 0
   fi
 
-  fail "Ollama is not installed. Install Ollama first, then rerun setup.sh."
+  command -v curl >/dev/null 2>&1 || fail "curl is required to install Ollama"
+  step "Installing Ollama"
+
+  case "$PLATFORM" in
+    Darwin)
+      if command -v brew >/dev/null 2>&1; then
+        brew install --cask ollama
+      else
+        curl -fsSL https://ollama.com/install.sh | sh
+      fi
+      ;;
+    Linux)
+      curl -fsSL https://ollama.com/install.sh | sh
+      ;;
+    *)
+      fail "Unsupported platform: $PLATFORM"
+      ;;
+  esac
+
+  command -v ollama >/dev/null 2>&1 || fail "Ollama install completed but no ollama binary was found"
+  ok "Ollama installed: $(ollama --version 2>/dev/null | head -1)"
 }
 
 ensure_ollama_running() {
@@ -65,7 +87,17 @@ ensure_ollama_running() {
     return 0
   fi
 
-  warn "Ollama is installed but not reachable. Trying to start 'ollama serve' in background."
+  if [ "$PLATFORM" = "Darwin" ] && command -v open >/dev/null 2>&1; then
+    warn "Ollama is installed but not reachable. Trying to launch the Ollama app."
+    open -a Ollama >/dev/null 2>&1 || true
+    sleep 5
+    if curl -fsS "http://127.0.0.1:11434/api/tags" >/dev/null 2>&1; then
+      ok "Ollama app started"
+      return 0
+    fi
+  fi
+
+  warn "Trying to start 'ollama serve' in background."
   nohup ollama serve >/tmp/xhigh-ollama.log 2>&1 &
   sleep 3
 
@@ -106,25 +138,38 @@ install_config() {
 }
 
 install_launchers() {
-  local install_dir wrapper_name
-  install_dir="$(pick_install_dir)" || fail "Could not find a writable bin directory"
+  local wrapper_name
+  INSTALL_DIR="$(pick_install_dir)" || fail "Could not find a writable bin directory"
 
-  step "Installing launcher commands into $install_dir"
+  step "Installing launcher commands into $INSTALL_DIR"
   for wrapper_name in codemax xhigh eburon-xhigh; do
-    cp "$ROOT_DIR/bin/$wrapper_name" "$install_dir/$wrapper_name"
-    chmod +x "$install_dir/$wrapper_name"
+    cp "$ROOT_DIR/bin/$wrapper_name" "$INSTALL_DIR/$wrapper_name"
+    chmod +x "$INSTALL_DIR/$wrapper_name"
   done
 
   ok "Installed commands: codemax, xhigh, eburon-xhigh"
 
   case ":$PATH:" in
-    *":$install_dir:"*) ;;
+    *":$INSTALL_DIR:"*) ;;
     *)
-      warn "$install_dir is not in PATH"
+      warn "$INSTALL_DIR is not in PATH"
       echo "Add this to your shell profile:"
-      echo "export PATH=\"$install_dir:\$PATH\""
+      echo "export PATH=\"$INSTALL_DIR:\$PATH\""
       ;;
   esac
+}
+
+start_tui() {
+  local launcher
+  launcher="$ROOT_DIR/bin/codemax"
+  if [ -n "$INSTALL_DIR" ] && [ -x "$INSTALL_DIR/codemax" ]; then
+    launcher="$INSTALL_DIR/codemax"
+  fi
+
+  echo ""
+  ok "Setup complete"
+  echo "Starting XHigh TUI..."
+  exec "$launcher"
 }
 
 echo ""
@@ -132,12 +177,9 @@ echo "XHigh setup"
 echo ""
 
 install_opencode
-ensure_ollama
+install_ollama
 ensure_ollama_running
 ensure_model
 install_config
 install_launchers
-
-echo ""
-ok "Setup complete"
-echo "Run: codemax"
+start_tui

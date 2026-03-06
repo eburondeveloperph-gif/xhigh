@@ -12,6 +12,12 @@ Model page:
 bash setup.sh
 ```
 
+One-line installer:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/eburondeveloperph-gif/xhigh/main/setup.sh)
+```
+
 Then run:
 
 ```bash
@@ -31,6 +37,9 @@ xhigh
 - `eburon-xhigh`
 - locked OpenCode config using `eburonmax/eburon-xhigh-hidden:latest`
 - automatic model pull from `https://ollama.com/eburonmax/eburon-xhigh-hidden`
+- automatic Ollama install
+- automatic OpenCode install
+- automatic TUI launch at the end of setup
 
 ## Files
 
