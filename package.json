@@ -1,0 +1,38 @@
+{
+  "name": "@eburondeveloperph-gif/xhigh",
+  "version": "0.1.0",
+  "description": "Portable OpenCode launcher for eburonmax/eburon-xhigh-hidden:latest",
+  "license": "UNLICENSED",
+  "private": false,
+  "type": "commonjs",
+  "bin": {
+    "codemax": "./bin/codemax",
+    "xhigh": "./bin/xhigh",
+    "eburon-xhigh": "./bin/eburon-xhigh",
+    "xhigh-setup": "./bin/xhigh-setup"
+  },
+  "files": [
+    "bin",
+    "config",
+    "docker",
+    "Dockerfile",
+    "README.md",
+    "setup.sh"
+  ],
+  "scripts": {
+    "setup": "bash setup.sh",
+    "docker:build": "docker build -t xhigh .",
+    "docker:run": "docker run --rm -it -v xhigh-ollama:/root/.ollama -v xhigh-config:/root/.config/opencode xhigh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eburondeveloperph-gif/xhigh.git"
+  },
+  "homepage": "https://github.com/eburondeveloperph-gif/xhigh#readme",
+  "bugs": {
+    "url": "https://github.com/eburondeveloperph-gif/xhigh/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
