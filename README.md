@@ -2,6 +2,10 @@
 
 Portable OpenCode launcher for the `eburonmax/eburon-xhigh-hidden:latest` Ollama model.
 
+Model page:
+
+- https://ollama.com/eburonmax/eburon-xhigh-hidden
+
 ## Quick start
 
 ```bash
@@ -26,6 +30,7 @@ xhigh
 - `xhigh`
 - `eburon-xhigh`
 - locked OpenCode config using `eburonmax/eburon-xhigh-hidden:latest`
+- automatic model pull from `https://ollama.com/eburonmax/eburon-xhigh-hidden`
 
 ## Files
 
