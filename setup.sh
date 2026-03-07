@@ -300,6 +300,17 @@ start_tui() {
     exec "$launcher"
   fi
 
+  if command -v script >/dev/null 2>&1; then
+    case "$PLATFORM" in
+      Darwin)
+        exec script -q /dev/null "$launcher"
+        ;;
+      Linux)
+        exec script -qefc "$launcher" /dev/null
+        ;;
+    esac
+  fi
+
   if [ -r /dev/tty ] && [ -w /dev/tty ]; then
     exec "$launcher" </dev/tty >/dev/tty 2>&1
   fi
