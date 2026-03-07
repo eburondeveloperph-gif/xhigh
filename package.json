@@ -1,7 +1,7 @@
 {
   "name": "@eburondeveloperph-gif/xhigh",
   "version": "0.1.0",
-  "description": "Portable OpenCode launcher for eburonmax/eburon-xhigh-hidden:latest",
+  "description": "Portable OpenCode launcher for qwen3.5",
   "license": "UNLICENSED",
   "private": false,
   "type": "commonjs",

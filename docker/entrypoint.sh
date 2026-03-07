@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-MODEL="${XHIGH_MODEL:-eburonmax/eburon-xhigh-hidden:latest}"
+MODEL="${XHIGH_MODEL:-qwen3.5}"
 CONFIG_DIR="/root/.config/opencode"
 ROOT_DIR="/opt/xhigh"
 

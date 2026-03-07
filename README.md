@@ -1,10 +1,6 @@
 # XHigh
 
-Portable OpenCode launcher for the `eburonmax/eburon-xhigh-hidden:latest` Ollama model.
-
-Model page:
-
-- https://ollama.com/eburonmax/eburon-xhigh-hidden
+Portable OpenCode launcher for the `qwen3.5` Ollama model.
 
 OpenCode TUI source:
 
@@ -47,8 +43,8 @@ xhigh
 - `xhigh`
 - `eburon-xhigh`
 - `xhigh-setup`
-- locked OpenCode config using `eburonmax/eburon-xhigh-hidden:latest`
-- automatic model pull from `https://ollama.com/eburonmax/eburon-xhigh-hidden`
+- locked OpenCode config using `qwen3.5`
+- automatic model pull via `ollama pull qwen3.5`
 - vendored OpenCode source and local TUI build
 - automatic Ollama install
 - automatic TUI launch at the end of setup
@@ -84,7 +80,7 @@ Run:
 docker run --rm -it -v xhigh-ollama:/root/.ollama -v xhigh-config:/root/.config/opencode xhigh
 ```
 
-The container starts Ollama, pulls `eburonmax/eburon-xhigh-hidden:latest` if needed, and then opens the TUI.
+The container starts Ollama, pulls `qwen3.5` if needed, and then opens the TUI.
 
 ## Independent OpenCode build
 

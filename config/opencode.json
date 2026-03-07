@@ -15,29 +15,25 @@
     },
     "xhigh-skill": {
       "color": "primary",
-      "description": "XHigh hidden default coding agent",
+      "description": "XHigh qwen3.5 default coding agent",
       "mode": "primary",
-      "model": "ollama/eburonmax/eburonmax/eburon-max"
+      "model": "ollama/qwen3.5"
     }
   },
   "default_agent": "xhigh-skill",
   "enabled_providers": [
     "ollama"
   ],
-  "model": "ollama/eburonmax/eburon-max",
+  "model": "ollama/qwen3.5",
   "permission": {
     "websearch": "allow"
   },
   "provider": {
     "ollama": {
       "models": {
-        "eburonmax/eburon-max": {
+        "qwen3.5": {
           "_launch": true,
-          "name": "eburonmax/eburon-max"
-        },
-        "eburonmax/eburon-max": {
-          "_launch": true,
-          "name": "eburonmax/eburon-max"
+          "name": "qwen3.5"
         }
       },
       "name": "xhigh",
@@ -46,9 +42,9 @@
         "baseURL": "http://127.0.0.1:11434/v1"
       },
       "whitelist": [
-        "eburonmax/eburon-max"
+        "qwen3.5"
       ]
     }
   },
-  "small_model": "ollama/eburonmax/eburon-max"
+  "small_model": "ollama/qwen3.5"
 }

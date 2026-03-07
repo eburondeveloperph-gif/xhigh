@@ -1,7 +1,7 @@
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV XHIGH_MODEL=eburonmax/eburon-xhigh-hidden:latest
+ENV XHIGH_MODEL=qwen3.5
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends bash ca-certificates curl git procps \

@@ -8,7 +8,7 @@ YELLOW="\033[33m"
 RED="\033[31m"
 RESET="\033[0m"
 
-MODEL="${XHIGH_MODEL:-eburonmax/eburon-xhigh-hidden:latest}"
+MODEL="${XHIGH_MODEL:-qwen3.5}"
 SCRIPT_PATH="${BASH_SOURCE[0]:-}"
 ROOT_DIR=""
 CONFIG_DIR="$HOME/.config/opencode"
