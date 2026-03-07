@@ -17,27 +17,27 @@
       "color": "primary",
       "description": "XHigh hidden default coding agent",
       "mode": "primary",
-      "model": "ollama/eburonmax/eburon-xhigh-hidden:latest"
+      "model": "ollama/eburonmax/eburonmax/eburon-max"
     }
   },
   "default_agent": "xhigh-skill",
   "enabled_providers": [
     "ollama"
   ],
-  "model": "ollama/eburonmax/eburon-xhigh-hidden:latest",
+  "model": "ollama/eburonmax/eburon-max",
   "permission": {
     "websearch": "allow"
   },
   "provider": {
     "ollama": {
       "models": {
-        "eburonmax/eburon-xhigh-hidden": {
+        "eburonmax/eburon-max": {
           "_launch": true,
-          "name": "eburonmax/eburon-xhigh-hidden"
+          "name": "eburonmax/eburon-max"
         },
-        "eburonmax/eburon-xhigh-hidden:latest": {
+        "eburonmax/eburon-max": {
           "_launch": true,
-          "name": "eburonmax/eburon-xhigh-hidden:latest"
+          "name": "eburonmax/eburon-max"
         }
       },
       "name": "xhigh",
@@ -46,9 +46,9 @@
         "baseURL": "http://127.0.0.1:11434/v1"
       },
       "whitelist": [
-        "eburonmax/eburon-xhigh-hidden:latest"
+        "eburonmax/eburon-max"
       ]
     }
   },
-  "small_model": "ollama/eburonmax/eburon-xhigh-hidden:latest"
+  "small_model": "ollama/eburonmax/eburon-max"
 }
